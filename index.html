@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Copia e Cola — GUIAS PMedGuBH</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f0f2f5; --surface: #fff; --border: #dde1e7;
+      --primary: #1a56a0; --accent: #25d366; --accent-h: #1ebe58;
+      --text: #1c2128; --muted: #6b7280;
+      --tag-bg: #e8f0fe; --tag-text: #1a56a0;
+      --radius: 10px; --shadow: 0 1px 4px rgba(0,0,0,.08);
+    }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    header { background: var(--primary); color: #fff; padding: 13px 16px; display: flex; align-items: center; gap: 10px; position: sticky; top: 0; z-index: 200; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
+    header .logo { width: 34px; height: 34px; background: rgba(255,255,255,.15); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+    header h1 { font-size: 15px; font-weight: 700; line-height: 1.2; }
+    header p  { font-size: 11px; opacity: .75; }
+    header .dev { margin-left: auto; font-size: 10px; opacity: .6; white-space: nowrap; text-align: right; line-height: 1.3; }
+
+    .tabs { display: flex; gap: 3px; padding: 12px 14px 0; background: var(--bg); position: sticky; top: 60px; z-index: 100; overflow-x: auto; }
+    .tab-btn { padding: 8px 14px; border: none; border-radius: 8px 8px 0 0; font-size: 13px; font-weight: 600; cursor: pointer; background: #dde1e7; color: var(--muted); white-space: nowrap; transition: background .15s, color .15s; }
+    .tab-btn.active { background: var(--surface); color: var(--primary); border-bottom: 3px solid var(--primary); }
+
+    .panel { display: none; padding: 14px; max-width: 860px; margin: 0 auto; }
+    .panel.active { display: block; }
+
+    /* Search */
+    .search-wrap { position: relative; margin-bottom: 14px; }
+    .search-wrap input { width: 100%; padding: 10px 12px 10px 36px; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 14px; background: var(--surface); color: var(--text); outline: none; transition: border-color .15s; }
+    .search-wrap input:focus { border-color: var(--primary); }
+    .search-wrap .si { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 15px; pointer-events: none; }
+
+    /* Cards modelos */
+    .cards { display: flex; flex-direction: column; gap: 12px; }
+    .card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+    .card-header { display: flex; align-items: center; gap: 9px; padding: 12px 13px; cursor: pointer; user-select: none; transition: background .1s; }
+    .card-header:hover { background: #f5f7fa; }
+    .card-num { min-width: 24px; height: 24px; background: var(--tag-bg); color: var(--tag-text); border-radius: 6px; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+    .card-title { flex: 1; font-size: 14px; font-weight: 600; }
+    .chevron { color: var(--muted); font-size: 11px; transition: transform .2s; }
+    .card.open .chevron { transform: rotate(180deg); }
+    .card-body { display: none; padding: 0 13px 13px; border-top: 1px solid var(--border); }
+    .card.open .card-body { display: block; }
+
+    .fields { display: flex; flex-wrap: wrap; gap: 7px; padding: 11px 0 9px; }
+    .fg { display: flex; flex-direction: column; gap: 3px; min-width: 140px; flex: 1; }
+    .fg label { font-size: 10px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+    .fg input, .fg select { padding: 7px 9px; border: 1.5px solid var(--border); border-radius: 7px; font-size: 13px; color: var(--text); background: var(--bg); outline: none; transition: border-color .15s; font-family: inherit; }
+    .fg input:focus, .fg select:focus { border-color: var(--primary); background: #fff; }
+
+    /* DUT selector no modelo 3 */
+    .dut-selector { background: #f0f5ff; border: 1.5px solid #c7d9f5; border-radius: 8px; padding: 11px 13px; margin: 4px 0 8px; }
+    .dut-selector label { font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: .04em; display: block; margin-bottom: 6px; }
+    .dut-selector select { width: 100%; padding: 8px 10px; border: 1.5px solid var(--border); border-radius: 7px; font-size: 13px; color: var(--text); background: #fff; outline: none; font-family: inherit; }
+    .dut-selector select:focus { border-color: var(--primary); }
+    .dut-preview-box { margin-top: 8px; background: #fff; border: 1px solid #c7d9f5; border-radius: 7px; padding: 9px 11px; font-size: 12.5px; line-height: 1.6; color: var(--text); display: none; }
+    .dut-preview-box.show { display: block; }
+
+    .preview { background: #f8fafb; border: 1.5px solid var(--border); border-radius: 8px; padding: 11px 13px; font-size: 13px; line-height: 1.65; white-space: pre-wrap; word-break: break-word; color: var(--text); margin-top: 4px; min-height: 70px; }
+    .preview mark { background: #fff3cd; border-radius: 3px; padding: 0 2px; font-weight: 600; color: #7a5100; }
+
+    .btn-copy { display: flex; align-items: center; gap: 6px; margin-top: 9px; padding: 9px 16px; background: var(--accent); color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background .15s, transform .08s; }
+    .btn-copy:hover { background: var(--accent-h); }
+    .btn-copy:active { transform: scale(.97); }
+    .btn-copy.copied { background: #1a8a45; }
+
+    /* Bloco de notas */
+    .notepad-layout { display: flex; flex-direction: column; gap: 12px; }
+    .ns { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+    .ns-head { padding: 9px 13px; background: #f5f7fa; border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+    .ns-head span { flex: 1; }
+    .ns-row { padding: 11px 13px; display: flex; gap: 7px; flex-wrap: wrap; align-items: flex-end; }
+    .ns-row select { flex: 1; min-width: 160px; padding: 8px 9px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; color: var(--text); background: var(--bg); outline: none; font-family: inherit; }
+    .ns-row select:focus { border-color: var(--primary); }
+    .btn-insert { padding: 8px 14px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s; white-space: nowrap; }
+    .btn-insert:hover { background: #14458a; }
+    .np-area { padding: 11px 13px; }
+    .np-area textarea { width: 100%; min-height: 220px; padding: 11px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; line-height: 1.65; font-family: inherit; color: var(--text); background: #f8fafb; resize: vertical; outline: none; transition: border-color .15s; }
+    .np-area textarea:focus { border-color: var(--primary); background: #fff; }
+    .np-actions { display: flex; gap: 7px; padding: 0 13px 13px; flex-wrap: wrap; }
+    .btn-wpp { display: flex; align-items: center; gap: 6px; padding: 9px 16px; background: var(--accent); color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background .15s; }
+    .btn-wpp:hover { background: var(--accent-h); }
+    .btn-wpp.copied { background: #1a8a45; }
+    .btn-clear { padding: 9px 14px; background: #fff; color: var(--muted); border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; cursor: pointer; }
+    .btn-clear:hover { border-color: #e55; color: #c00; }
+    .char-count { font-size: 11px; color: var(--muted); padding: 0 13px 9px; }
+
+    /* Gerador IA */
+    .gen-layout { display: flex; flex-direction: column; gap: 12px; }
+    .gen-box { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+    .gen-head { padding: 10px 13px; background: linear-gradient(135deg, #1a56a0 0%, #2563c7 100%); color: #fff; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .gen-body { padding: 13px; }
+    .gen-body label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; display: block; margin-bottom: 5px; }
+    .gen-body textarea { width: 100%; min-height: 80px; padding: 10px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; line-height: 1.6; font-family: inherit; color: var(--text); background: var(--bg); resize: vertical; outline: none; transition: border-color .15s; }
+    .gen-body textarea:focus { border-color: var(--primary); background: #fff; }
+    .gen-row { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 9px; }
+    .gen-field { flex: 1; min-width: 130px; display: flex; flex-direction: column; gap: 3px; }
+    .gen-field label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+    .gen-field input { padding: 7px 9px; border: 1.5px solid var(--border); border-radius: 7px; font-size: 13px; background: var(--bg); color: var(--text); outline: none; font-family: inherit; }
+    .gen-field input:focus { border-color: var(--primary); background: #fff; }
+    .btn-gen { width: 100%; margin-top: 11px; padding: 11px; background: var(--primary); color: #fff; border: none; border-radius: 9px; font-size: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background .15s; }
+    .btn-gen:hover { background: #14458a; }
+    .btn-gen:disabled { background: #8faacc; cursor: not-allowed; }
+    .gen-result { background: #f8fafb; border: 1.5px solid var(--border); border-radius: 8px; padding: 12px 13px; font-size: 13px; line-height: 1.65; white-space: pre-wrap; word-break: break-word; color: var(--text); min-height: 60px; }
+    .gen-result .loading { color: var(--muted); font-style: italic; }
+    .gen-result .error { color: #c00; }
+
+    /* Toast */
+    #toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(20px); background: #1c2128; color: #fff; padding: 9px 18px; border-radius: 24px; font-size: 13px; font-weight: 600; opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; z-index: 999; }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 600px) {
+      header h1 { font-size: 13px; }
+      .tabs { padding: 8px 8px 0; }
+      .tab-btn { padding: 7px 10px; font-size: 12px; }
+      .panel { padding: 10px 8px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">💬</div>
+  <div>
+    <h1>Copia e Cola — GUIAS PMedGuBH</h1>
+    <p>Auditoria Prévia · 4ª Região Militar / FUSEx</p>
+  </div>
+  <div class="dev">Desenvolvido por<br><strong style="color:#7dd3fc;">Rafael Costa</strong></div>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('modelos',this)">📋 Modelos</button>
+  <button class="tab-btn"        onclick="switchTab('bloco',this)">✏️ Bloco de Notas</button>
+  <button class="tab-btn"        onclick="switchTab('gerador',this)">🤖 Gerador IA</button>
+</div>
+
+<!-- ═══════════════ ABA 1 — MODELOS ═══════════════ -->
+<div id="tab-modelos" class="panel active">
+  <div class="search-wrap">
+    <span class="si">🔍</span>
+    <input type="text" id="search" placeholder="Buscar modelo…" oninput="filterCards()" />
+  </div>
+  <div class="cards" id="cards-container"></div>
+</div>
+
+<!-- ═══════════════ ABA 2 — BLOCO DE NOTAS ═══════════════ -->
+<div id="tab-bloco" class="panel">
+  <div class="notepad-layout">
+    <div class="ns">
+      <div class="ns-head"><span>1. Inserir modelo de mensagem</span></div>
+      <div class="ns-row">
+        <select id="np-select"><option value="">— Selecionar modelo —</option></select>
+        <button class="btn-insert" onclick="insertModel()">Inserir ↓</button>
+      </div>
+    </div>
+    <div class="ns">
+      <div class="ns-head">
+        <span>2. Bloco de texto — edite e complete com a DUT</span>
+        <button class="btn-clear" style="padding:4px 9px;font-size:12px;border-radius:6px;border:1px solid var(--border);background:#fff;color:var(--muted);cursor:pointer;" onclick="clearNotepad()">Limpar</button>
+      </div>
+      <div class="np-area">
+        <textarea id="notepad-text" placeholder="Insira um modelo acima, preencha os campos e cole os critérios da DUT..."></textarea>
+      </div>
+      <div class="char-count" id="char-count">0 caracteres</div>
+      <div class="np-actions">
+        <button class="btn-wpp" id="btn-wpp-copy" onclick="copyNotepad()"><span>📋</span> Copiar para WPP</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ ABA 3 — GERADOR IA ═══════════════ -->
+<div id="tab-gerador" class="panel">
+  <div class="gen-layout">
+    <div class="gen-box">
+      <div class="gen-head">🤖 Gerador de Mensagem — Outros Motivos</div>
+      <div class="gen-body">
+        <label>Descreva o motivo da negativa (em linguagem livre)</label>
+        <textarea id="gen-motivo" placeholder="Ex: Procedimento não coberto pelo FUSEx para beneficiários da reserva, procedimento realizado em local não credenciado, duplicidade de solicitação no mesmo período, fora do prazo de validade do pedido médico..."></textarea>
+        <div class="gen-row">
+          <div class="gen-field"><label>Data da solicitação</label><input type="text" id="gen-data" placeholder="dd/mm/aaaa" data-mask="data" oninput="maskInput(this)" /></div>
+          <div class="gen-field"><label>Horário</label><input type="text" id="gen-hora" placeholder="HH:MM" data-mask="hora" oninput="maskInput(this)" /></div>
+          <div class="gen-field"><label>Exame / Procedimento</label><input type="text" id="gen-proc" placeholder="Ex: Ressonância Magnética de Joelho" /></div>
+        </div>
+        <button class="btn-gen" id="btn-gen" onclick="gerarMensagem()">
+          <span>✨</span> Gerar mensagem padronizada
+        </button>
+      </div>
+    </div>
+    <div class="gen-box" id="gen-result-box" style="display:none;">
+      <div class="ns-head">
+        <span>Mensagem gerada</span>
+        <button class="btn-clear" style="padding:4px 9px;font-size:12px;border-radius:6px;border:1px solid var(--border);background:#fff;color:var(--muted);cursor:pointer;" onclick="editarGerado()">✏️ Editar no Bloco</button>
+      </div>
+      <div style="padding:13px;">
+        <div class="gen-result" id="gen-result"></div>
+        <button class="btn-copy" id="btn-copy-gen" onclick="copyGerado()" style="margin-top:10px;">
+          <span>📋</span> Copiar mensagem
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast">✅ Copiado!</div>
+
+<script>
+/* ═══════════════════════════════════════════
+   DUTs disponíveis para seleção no modelo 3
+═══════════════════════════════════════════ */
+const DUTS = [
+  {
+    nome: "Densitometria Óssea",
+    texto: `Critérios de cobertura obrigatória — Densitometria Óssea:
+• Mulheres com 65 anos ou mais
+• Homens com 70 anos ou mais
+• Adultos com fratura por fragilidade (baixo impacto)
+• Adultos com condição associada à perda de massa óssea: uso crônico de corticoides, hipogonadismo, menopausa precoce, hiperparatireoidismo, hipercortisolismo
+• Monitoramento de tratamento para osteoporose (intervalo mínimo de 1 ano entre exames)`
+  },
+  {
+    nome: "Mamografia (Convencional ou Digital Bilateral)",
+    texto: `Critérios de cobertura obrigatória — Mamografia:
+• Rastreamento: mulheres entre 50 e 69 anos (a cada 2 anos)
+• Rastreamento a partir dos 40 anos na presença de fator de risco
+• Diagnóstico: qualquer idade, com indicação clínica documentada
+• Seguimento pós-tratamento de câncer de mama`
+  },
+  {
+    nome: "Ressonância Magnética de Coluna",
+    texto: `Critérios de cobertura obrigatória — RM de Coluna:
+• Déficit neurológico progressivo ou síndrome de compressão medular
+• Suspeita de neoplasia, infecção ou fratura patológica
+• Dor axial sem melhora após 4 a 6 semanas de tratamento conservador adequado
+• Pré-operatório ou pós-operatório de cirurgia de coluna
+• Suspeita de espondiloartrite ou doença desmielinizante`
+  },
+  {
+    nome: "Ressonância Magnética de Joelho",
+    texto: `Critérios de cobertura obrigatória — RM de Joelho:
+• Suspeita de lesão de menisco ou ligamentos com exame clínico inconclusivo
+• Suspeita de lesão osteocondral
+• Avaliação pré ou pós-operatória
+• Dor persistente sem diagnóstico após avaliação clínica e radiológica`
+  },
+  {
+    nome: "Ressonância Magnética de Ombro",
+    texto: `Critérios de cobertura obrigatória — RM de Ombro:
+• Suspeita de lesão do manguito rotador com exame clínico inconclusivo
+• Avaliação pré ou pós-operatória
+• Suspeita de lesão labral, instabilidade ou bursite refratária ao tratamento clínico`
+  },
+  {
+    nome: "Ressonância Magnética de Crânio/Encéfalo",
+    texto: `Critérios de cobertura obrigatória — RM de Crânio/Encéfalo:
+• Cefaleia de início súbito ou progressiva com suspeita de causa estrutural
+• Déficit neurológico focal ou crises epilépticas
+• Suspeita de acidente vascular cerebral (AVC), neoplasia, infecção do SNC ou doença desmielinizante
+• Avaliação de demência ou distúrbios cognitivos
+• Pré-operatório neurocirúrgico`
+  },
+  {
+    nome: "Tomografia Computadorizada de Crânio",
+    texto: `Critérios de cobertura obrigatória — TC de Crânio:
+• Trauma cranioencefálico com perda de consciência, amnésia ou déficit neurológico
+• Suspeita de hemorragia intracraniana ou AVC isquêmico agudo
+• Cefaleia súbita e intensa (em trovoada)
+• Déficit neurológico focal de início agudo
+• Alteração do nível de consciência de causa não determinada`
+  },
+  {
+    nome: "Colonoscopia",
+    texto: `Critérios de cobertura obrigatória — Colonoscopia:
+• Rastreamento de câncer colorretal a partir dos 50 anos (ou 40 anos com história familiar de primeiro grau)
+• Investigação de sangramento retal, anemia ferropriva sem causa identificada, alteração do hábito intestinal persistente
+• Seguimento após polipectomia ou ressecção de câncer colorretal
+• Doença inflamatória intestinal: diagnóstico ou acompanhamento
+• Diarreia crônica com investigação clínica inconclusiva`
+  },
+  {
+    nome: "Endoscopia Digestiva Alta (EDA)",
+    texto: `Critérios de cobertura obrigatória — Endoscopia Digestiva Alta:
+• Sintomas dispépticos persistentes sem resposta ao tratamento clínico por 4 a 8 semanas
+• Suspeita de hemorragia digestiva alta ou anemia ferropriva sem causa identificada
+• Disfagia ou odinofagia
+• Investigação de H. pylori após falha terapêutica
+• Seguimento de esôfago de Barrett, gastrite atrófica ou úlcera péptica`
+  },
+  {
+    nome: "PSA (Antígeno Prostático Específico)",
+    texto: `Critérios de cobertura obrigatória — PSA:
+• Rastreamento em homens a partir dos 50 anos com expectativa de vida superior a 10 anos (mediante solicitação médica e decisão compartilhada com o paciente)
+• Rastreamento a partir dos 45 anos em homens com fator de risco (história familiar de primeiro grau ou afrodescendentes)
+• Monitoramento pós-tratamento de câncer de próstata`
+  },
+  {
+    nome: "Ecocardiograma",
+    texto: `Critérios de cobertura obrigatória — Ecocardiograma:
+• Suspeita clínica de cardiopatia estrutural (sopro, cardiomegalia, arritmia)
+• Avaliação de insuficiência cardíaca, valvopatia ou miocardiopatia
+• Avaliação pré-operatória de cirurgia cardíaca
+• Controle de doenças cardíacas já diagnosticadas
+• Suspeita de derrame pericárdico ou endocardite`
+  },
+  {
+    nome: "Holter 24h",
+    texto: `Critérios de cobertura obrigatória — Holter 24h:
+• Investigação de palpitações, síncope ou pré-síncope de causa indeterminada
+• Documentação de arritmias cardíacas suspeitas ao ECG ou por sintomas
+• Avaliação de eficácia de antiarrítmicos
+• Controle pós-ablação de arritmias`
+  },
+  {
+    nome: "Mamotomia (Biópsia Percutânea à Vácuo)",
+    texto: `Critérios de cobertura obrigatória — Mamotomia:
+• Lesões com categoria BI-RADS 4 ou 5, quando preenchido pelo menos um dos critérios:
+  a) Lesões/alterações não palpáveis, de qualquer tamanho
+  b) Calcificações suspeitas
+  c) Distorções arquiteturais
+  d) Assimetrias focais ou difusas
+  e) Nódulos`
+  },
+  {
+    nome: "Fisioterapia / Fonoaudiologia / Psicoterapia (sessões)",
+    texto: `Critérios de cobertura obrigatória — Terapias (OCSA):
+• Indicação médica formal com diagnóstico, objetivo terapêutico e número de sessões justificado
+• Para fisioterapia: relatório com diagnóstico funcional, fase de tratamento (aguda/reabilitação) e resposta esperada
+• Para fonoaudiologia: laudo com diagnóstico e plano terapêutico
+• Para psicoterapia: relatório psiquiátrico ou psicológico com CID e justificativa clínica
+• Renovação: relatório de acompanhamento com evolução do quadro e justificativa para continuidade`
+  },
+  {
+    nome: "Cirurgia Bariátrica",
+    texto: `Critérios de cobertura obrigatória — Cirurgia Bariátrica:
+• IMC ≥ 40 kg/m², independentemente de comorbidades; ou
+• IMC entre 35 e 39,9 kg/m² com pelo menos uma das comorbidades: DM tipo 2, HAS, apneia do sono, dislipidemia, doença articular incapacitante, refluxo gastroesofágico grave
+• Falha no tratamento clínico por pelo menos 2 anos
+• Avaliação multidisciplinar prévia documentada (clínico, nutrólogo/nutricionista, psicólogo/psiquiatra)
+• Idade entre 18 e 65 anos (acima de 65 e abaixo de 18: avaliação individualizada)`
+  },
+  {
+    nome: "OCT — Tomografia de Coerência Óptica",
+    texto: `Critérios de cobertura obrigatória — OCT (Tomografia de Coerência Óptica):
+• Diagnóstico e acompanhamento de glaucoma com suspeita clínica ou campo visual alterado
+• Diagnóstico e monitoramento de doenças maculares: DMRI (degeneração macular relacionada à idade), edema macular diabético, membrana epirretiniana, buraco macular
+• Neuropatias ópticas (suspeita ou acompanhamento)
+• Avaliação de neovascularização sub-retiniana
+• Monitoramento de tratamento com anti-VEGF intravítreo
+Obs.: Solicitação deve conter diagnóstico, biomicroscopia de fundo e, quando disponível, campo visual`
+  },
+  {
+    nome: "PET-CT (Tomografia por Emissão de Pósitrons)",
+    texto: `Critérios de cobertura obrigatória — PET-CT:
+• Estadiamento inicial de neoplasias malignas confirmadas histologicamente (quando o resultado impactar a decisão terapêutica)
+• Reestadiamento de neoplasias após tratamento (suspeita de recidiva ou progressão)
+• Avaliação de resposta ao tratamento oncológico (quimioterapia ou radioterapia), quando não for possível por outros métodos de imagem
+• Tumores com marcadores tumorais elevados e outros métodos de imagem inconclusivos
+Procedimentos que NÃO têm cobertura obrigatória: rastreamento em pacientes assintomáticos sem neoplasia confirmada; solicitações sem laudo histopatológico de malignidade`
+  },
+  {
+    nome: "Implante Coclear",
+    texto: `Critérios de cobertura obrigatória — Implante Coclear:
+• Surdez neurossensorial bilateral severa a profunda (audiometria tonal: limiar > 70 dBNA nas frequências de 500 Hz a 4 kHz)
+• Ausência de benefício funcional adequado com prótese auditiva convencional
+• Avaliação audiológica e fonoaudiológica documentada
+• Ausência de contraindicação médica ao procedimento`
+  },
+  {
+    nome: "Cirurgia Refrativa (Ceratectomia / LASIK)",
+    texto: `Critérios de cobertura obrigatória — Cirurgia Refrativa:
+• Paciente com ceratocone com falha do tratamento clínico ou intolerância a lentes de contato
+• Documentação de tentativas prévias de correção com lentes`
+  }
+];
+
+/* ═══════════════════════════════════════════
+   MODELOS DE MENSAGEM
+═══════════════════════════════════════════ */
+const MODELOS = [
+  {
+    num: 1, titulo: "Solicitar pedido médico",
+    campos: ["DATA","HORÁRIO","EXAME/CONSULTA/PROCEDIMENTO"],
+    template: `Olá, Sr.(a).
+
+Sua solicitação registrada em [DATA], às [HORÁRIO], referente a [EXAME/CONSULTA/PROCEDIMENTO], foi analisada pela auditoria prévia.
+
+No momento, não foi possível prosseguir com a autorização, pois é necessário o envio do *pedido médico atualizado*.
+
+O pedido deve conter:
+• nome do paciente;
+• exame/consulta/procedimento solicitado;
+• indicação clínica ou diagnóstico;
+• data do pedido;
+• assinatura e carimbo do médico solicitante.
+
+Após o envio do documento, a solicitação poderá ser reavaliada pela auditoria prévia.`
+  },
+  {
+    num: 2, titulo: "Solicitar relatório com justificativa",
+    campos: ["DATA","HORÁRIO","EXAME/CONSULTA/PROCEDIMENTO"],
+    template: `Olá, Sr.(a).
+
+Sua solicitação registrada em [DATA], às [HORÁRIO], referente a [EXAME/CONSULTA/PROCEDIMENTO], foi analisada pela auditoria prévia.
+
+No momento, não foi possível autorizar a solicitação, pois é necessário o envio de *relatório médico com justificativa clínica detalhada*.
+
+O relatório deve informar, preferencialmente:
+• diagnóstico ou hipótese diagnóstica;
+• sintomas e tempo de evolução;
+• tratamentos já realizados;
+• exames anteriores, se houver;
+• justificativa da necessidade do exame/consulta/procedimento solicitado neste momento.
+
+Após o envio do relatório, a solicitação poderá ser reavaliada.`
+  },
+  {
+    num: 3, titulo: "Enviar critérios DUT / não cumpre requisitos",
+    campos: ["DATA","HORÁRIO","EXAME/CONSULTA/PROCEDIMENTO"],
+    temDUT: true,
+    template: `Olá, Sr.(a).
+
+Sua solicitação registrada em [DATA], às [HORÁRIO], referente a [EXAME/CONSULTA/PROCEDIMENTO], foi analisada pela auditoria prévia.
+
+No momento, não foi possível autorizar a solicitação, pois as informações apresentadas no pedido/relatório *não demonstram o cumprimento dos critérios exigidos pela DUT/ANS* para cobertura do procedimento solicitado.
+
+Para nova análise, é necessário enviar *relatório médico complementar*, contendo as informações clínicas que justifiquem o exame/procedimento conforme os critérios da DUT correspondente.
+
+Após o envio das informações complementares, a solicitação poderá ser reavaliada.
+
+Segue abaixo os critérios da DUT:
+
+[CRITÉRIOS_DUT]`
+  },
+  {
+    num: 4, titulo: "Agendar no PMedGu",
+    campos: ["DATA","HORÁRIO","EXAME/CONSULTA/PROCEDIMENTO"],
+    temAgenda: true,
+    template: `Olá, Sr.(a).
+
+Sua solicitação registrada em [DATA], às [HORÁRIO], referente a [EXAME/CONSULTA/PROCEDIMENTO], foi analisada pela auditoria prévia.
+
+A especialidade desejada é atendida no PMedGu. Para continuidade da solicitação, será necessário realizar *agendamento no PMedGu* para avaliação médica. Se necessário, o médico assistente poderá indicar o encaminhamento.
+
+📅 *Como agendar:*
+
+• *Telefone fixo:* (31) 3508-9992
+• *WhatsApp (somente mensagem):* (31) 99895-9219
+• Atendimento: seg a qui, das 7h às 17h (exceto feriados)
+
+• *Presencialmente:* seg a sex, das 7h às 17h (exceto feriados) — presencial permite agendamento para qualquer especialidade
+
+[INFO_ESPECIALIDADE]`
+  },
+  {
+    num: 5, titulo: "Solicitar relatório de acompanhamento",
+    campos: ["DATA","HORÁRIO","EXAME/CONSULTA/PROCEDIMENTO"],
+    template: `Olá, Sr.(a).
+
+Sua solicitação registrada em [DATA], às [HORÁRIO], referente a [EXAME/CONSULTA/PROCEDIMENTO], foi analisada pela auditoria prévia.
+
+No momento, não foi possível prosseguir com a autorização, pois é necessário o envio de *relatório médico de acompanhamento atualizado*.
+
+O relatório deve informar:
+• evolução do quadro clínico;
+• resposta ao tratamento realizado;
+• necessidade de continuidade do acompanhamento;
+• justificativa para a consulta/exame/procedimento solicitado.
+
+Após o envio do relatório atualizado, a solicitação poderá ser reavaliada pela auditoria prévia.`
+  },
+  {
+    num: 6, titulo: "Documento incorreto",
+    campos: ["DATA","HORÁRIO","EXAME/CONSULTA/PROCEDIMENTO"],
+    template: `Olá, Sr.(a).
+
+Sua solicitação registrada em [DATA], às [HORÁRIO], referente a [EXAME/CONSULTA/PROCEDIMENTO], foi analisada pela auditoria prévia.
+
+No momento, não foi possível prosseguir com a análise, pois o documento enviado está *incorreto*.
+
+Solicitamos o reenvio do documento correto, contendo as informações necessárias para análise.
+
+Após o envio correto, a solicitação poderá ser reavaliada.`
+  },
+  {
+    num: 7, titulo: "Seção incorreta",
+    campos: ["DATA","HORÁRIO","EXAME/CONSULTA/PROCEDIMENTO"],
+    template: `Olá, Sr.(a).
+
+Sua solicitação registrada em [DATA], às [HORÁRIO], referente a [EXAME/CONSULTA/PROCEDIMENTO], foi analisada pela auditoria prévia.
+
+No momento, não foi possível prosseguir com a autorização, pois a solicitação foi encaminhada para *seção incorreta*.
+
+Solicitamos que o pedido seja direcionado à seção responsável pela análise/execução do procedimento solicitado, conforme o fluxo correto de atendimento.
+
+Após o encaminhamento adequado, a solicitação poderá ser analisada pela seção competente.`
+  },
+  {
+    num: 8, titulo: "Local do exame/procedimento incorreto",
+    campos: ["DATA","HORÁRIO","EXAME/CONSULTA/PROCEDIMENTO"],
+    template: `Olá, Sr.(a).
+
+Sua solicitação registrada em [DATA], às [HORÁRIO], referente a [EXAME/CONSULTA/PROCEDIMENTO], foi analisada pela auditoria prévia.
+
+No momento, não foi possível prosseguir com a autorização, pois o *local informado para realização do exame/procedimento/consulta está incorreto ou não corresponde ao local autorizado/credenciado* para essa solicitação.
+
+Solicitamos a correção do local de realização ou o envio de nova solicitação com o local adequado, conforme orientação do serviço responsável.
+
+Após a correção, a solicitação poderá ser reavaliada pela auditoria prévia.`
+  },
+  {
+    num: 9, titulo: "Máximo de sessões permitido",
+    campos: ["DATA","HORÁRIO","EXAME/CONSULTA/PROCEDIMENTO","NÚMERO DE SESSÕES AUTORIZADAS"],
+    template: `Olá, Sr.(a).
+
+Sua solicitação registrada em [DATA], às [HORÁRIO], referente a [EXAME/CONSULTA/PROCEDIMENTO], foi analisada pela auditoria prévia.
+
+No momento, não foi possível autorizar a quantidade total solicitada, pois o número de sessões solicitado é *superior ao quantitativo máximo permitido para liberação neste momento*.
+
+Dessa forma, poderão ser autorizadas *[NÚMERO DE SESSÕES AUTORIZADAS] sessões*, conforme limite permitido pela auditoria prévia.
+
+Caso haja necessidade de continuidade após esse período, deverá ser encaminhado *novo pedido médico/relatório de acompanhamento atualizado*, contendo a evolução do quadro, resposta ao tratamento e justificativa para manutenção das sessões.
+
+Após o envio da documentação complementar, uma nova solicitação poderá ser analisada.`
+  }
+];
+
+/* Dias por especialidade (modelo 4) */
+const AGENDA_DIAS = {
+  "Segunda-feira":  ["Ginecologia/Obstetrícia","Alergista","Pediatria"],
+  "Terça-feira":    ["Cardiologia","Neurologia","Geriatria"],
+  "Quarta-feira":   ["Endocrinologia","Nutrição","Endoscopia/Colonoscopia","Cirurgia Geral"],
+  "Quinta-feira":   ["Clínica Médica","Ultrassonografia","Ortopedia"],
+  "Sexta-feira":    ["Cirurgia Torácica/Pneumologia","Reumatologia"]
+};
+
+/* ═══════════════════════════════════════════
+   RENDERIZAR CARDS
+═══════════════════════════════════════════ */
+function buildPreview(template, valores, dutText) {
+  let html = template;
+  for (const [k,v] of Object.entries(valores)) {
+    if (v.trim()) {
+      const re = new RegExp('\\['+k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\]','g');
+      html = html.replace(re, `<strong>${v}</strong>`);
+    }
+  }
+  if (dutText) {
+    html = html.replace('[CRITÉRIOS_DUT]', dutText ? dutText : '[CRITÉRIOS_DUT]');
+  }
+  html = html.replace('[INFO_ESPECIALIDADE]','');
+  html = html.replace(/\[([A-ZÀ-Ú/_]+)\]/g,'<mark>[$1]</mark>');
+  return html;
+}
+
+function getPlainText(template, valores, dutText, agendaInfo) {
+  let txt = template;
+  for (const [k,v] of Object.entries(valores)) {
+    if (v.trim()) {
+      const re = new RegExp('\\['+k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\]','g');
+      txt = txt.replace(re, v);
+    }
+  }
+  if (dutText) txt = txt.replace('[CRITÉRIOS_DUT]', dutText);
+  if (agendaInfo) txt = txt.replace('[INFO_ESPECIALIDADE]', agendaInfo);
+  else txt = txt.replace('[INFO_ESPECIALIDADE]','').trim();
+  return txt;
+}
+
+function renderCards(lista) {
+  const c = document.getElementById('cards-container');
+  c.innerHTML = '';
+  if (!lista.length) { c.innerHTML = '<p style="color:var(--muted);text-align:center;padding:28px 0;">Nenhum modelo encontrado.</p>'; return; }
+
+  lista.forEach(m => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.dataset.id = m.num;
+
+    const fieldsHTML = m.campos.map(campo => {
+      const tipo = campo === 'DATA' ? 'data-mask="data"' : campo === 'HORÁRIO' ? 'data-mask="hora"' : '';
+      const ph   = campo === 'DATA' ? 'dd/mm/aaaa' : campo === 'HORÁRIO' ? 'HH:MM' : campo;
+      return `
+      <div class="fg">
+        <label>${campo}</label>
+        <input type="text" placeholder="${ph}" data-campo="${campo}" ${tipo} oninput="maskInput(this);updatePreview(${m.num},this)" />
+      </div>`;
+    }).join('');
+
+    /* Bloco extra para modelo 3 (DUT) */
+    const dutBlock = m.temDUT ? `
+      <div class="dut-selector">
+        <label>📋 Selecionar critérios da DUT</label>
+        <select id="dut-sel-${m.num}" onchange="onDutChange(${m.num})">
+          <option value="">— Escolher DUT correspondente —</option>
+          ${DUTS.map((d,i)=>`<option value="${i}">${d.nome}</option>`).join('')}
+        </select>
+        <div class="dut-preview-box" id="dut-box-${m.num}"></div>
+      </div>` : '';
+
+    /* Bloco extra para modelo 4 (Agenda) */
+    const agendaBlock = m.temAgenda ? `
+      <div class="dut-selector">
+        <label>📅 Especialidade solicitada (para informar o dia de agendamento)</label>
+        <select id="agenda-sel-${m.num}" onchange="onAgendaChange(${m.num})">
+          <option value="">— Selecionar especialidade —</option>
+          ${Object.entries(AGENDA_DIAS).flatMap(([dia,esps])=>esps.map(e=>`<option value="${dia}|${e}">${e} (${dia})</option>`)).join('')}
+          <option value="presencial">Presencial (qualquer especialidade / seg a sex)</option>
+        </select>
+        <div class="dut-preview-box" id="agenda-box-${m.num}"></div>
+      </div>` : '';
+
+    card.innerHTML = `
+      <div class="card-header" onclick="toggleCard(this)">
+        <div class="card-num">${m.num}</div>
+        <div class="card-title">${m.titulo}</div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="card-body">
+        <div class="fields">${fieldsHTML}</div>
+        ${dutBlock}${agendaBlock}
+        <div class="preview" id="preview-${m.num}">${buildPreview(m.template,{})}</div>
+        <button class="btn-copy" onclick="copyCard(${m.num},this)"><span>📋</span> Copiar mensagem</button>
+      </div>`;
+    c.appendChild(card);
+  });
+}
+
+function toggleCard(h) { h.parentElement.classList.toggle('open'); }
+
+function getCardVals(num) {
+  const card = document.querySelector(`.card[data-id="${num}"]`);
+  const vals = {};
+  card.querySelectorAll('[data-campo]').forEach(i => vals[i.dataset.campo] = i.value);
+  return { card, vals };
+}
+
+function updatePreview(num) {
+  const m = MODELOS.find(x=>x.num===num);
+  const {card, vals} = getCardVals(num);
+  const dutText  = getDutText(num, m);
+  const agendaInfo = getAgendaInfo(num, m);
+  document.getElementById(`preview-${num}`).innerHTML = buildPreview(m.template, vals, dutText || '', agendaInfo);
+}
+
+function getDutText(num, m) {
+  if (!m.temDUT) return null;
+  const sel = document.getElementById(`dut-sel-${num}`);
+  if (!sel || sel.value === '') return null;
+  return DUTS[parseInt(sel.value)].texto;
+}
+
+function getAgendaInfo(num, m) {
+  if (!m.temAgenda) return null;
+  const sel = document.getElementById(`agenda-sel-${num}`);
+  if (!sel || sel.value === '') return null;
+  if (sel.value === 'presencial') {
+    return `ℹ️ O agendamento presencial permite agendar qualquer especialidade de segunda a sexta.`;
+  }
+  const [dia, esp] = sel.value.split('|');
+  return `ℹ️ ${esp}: agendamento por telefone/WhatsApp disponível às *${dia}s*.`;
+}
+
+function onDutChange(num) {
+  const sel = document.getElementById(`dut-sel-${num}`);
+  const box = document.getElementById(`dut-box-${num}`);
+  if (sel.value !== '') {
+    const dut = DUTS[parseInt(sel.value)];
+    box.textContent = dut.texto;
+    box.classList.add('show');
+  } else {
+    box.classList.remove('show');
+  }
+  updatePreview(num);
+}
+
+function onAgendaChange(num) {
+  const sel = document.getElementById(`agenda-sel-${num}`);
+  const box = document.getElementById(`agenda-box-${num}`);
+  const info = getAgendaInfo(num, MODELOS.find(x=>x.num===num));
+  if (info) { box.textContent = info; box.classList.add('show'); }
+  else { box.classList.remove('show'); }
+  updatePreview(num);
+}
+
+function copyCard(num, btn) {
+  const m = MODELOS.find(x=>x.num===num);
+  const {vals} = getCardVals(num);
+  const dutText   = getDutText(num, m);
+  const agendaInfo = getAgendaInfo(num, m);
+  const txt = getPlainText(m.template, vals, dutText, agendaInfo);
+  copyToClipboard(txt);
+  btn.classList.add('copied');
+  btn.innerHTML = '<span>✅</span> Copiado!';
+  setTimeout(()=>{ btn.classList.remove('copied'); btn.innerHTML='<span>📋</span> Copiar mensagem'; },2000);
+  showToast('Mensagem copiada!');
+}
+
+/* ═══════════════════════════════════════════
+   BUSCA
+═══════════════════════════════════════════ */
+function filterCards() {
+  const q = document.getElementById('search').value.toLowerCase();
+  renderCards(q ? MODELOS.filter(m=>m.titulo.toLowerCase().includes(q)||m.template.toLowerCase().includes(q)) : MODELOS);
+}
+
+/* ═══════════════════════════════════════════
+   BLOCO DE NOTAS
+═══════════════════════════════════════════ */
+function populateSelect() {
+  const sel = document.getElementById('np-select');
+  MODELOS.forEach(m=>{ const o=document.createElement('option'); o.value=m.num; o.textContent=`${m.num}. ${m.titulo}`; sel.appendChild(o); });
+}
+
+function insertModel() {
+  const num = parseInt(document.getElementById('np-select').value);
+  if (!num) return;
+  const m = MODELOS.find(x=>x.num===num);
+  const ta = document.getElementById('notepad-text');
+  const curr = ta.value.trim();
+  ta.value = curr ? curr+'\n\n'+m.template : m.template;
+  updateCharCount();
+  showToast('Modelo inserido!');
+}
+
+function clearNotepad() {
+  if (confirm('Limpar o bloco de notas?')) { document.getElementById('notepad-text').value=''; updateCharCount(); }
+}
+
+function copyNotepad() {
+  const txt = document.getElementById('notepad-text').value;
+  if (!txt.trim()) { showToast('O bloco está vazio.'); return; }
+  copyToClipboard(txt);
+  const btn = document.getElementById('btn-wpp-copy');
+  btn.classList.add('copied'); btn.innerHTML='<span>✅</span> Copiado!';
+  setTimeout(()=>{ btn.classList.remove('copied'); btn.innerHTML='<span>📋</span> Copiar para WPP'; },2000);
+  showToast('Copiado para o WPP!');
+}
+
+document.getElementById('notepad-text').addEventListener('input', updateCharCount);
+function updateCharCount() {
+  const n = document.getElementById('notepad-text').value.length;
+  document.getElementById('char-count').textContent = `${n} caractere${n!==1?'s':''}`;
+}
+
+/* ═══════════════════════════════════════════
+   GERADOR IA
+═══════════════════════════════════════════ */
+let textoGerado = '';
+
+async function gerarMensagem() {
+  const motivo = document.getElementById('gen-motivo').value.trim();
+  const data   = document.getElementById('gen-data').value.trim();
+  const hora   = document.getElementById('gen-hora').value.trim();
+  const proc   = document.getElementById('gen-proc').value.trim();
+
+  if (!motivo) { showToast('Descreva o motivo da negativa.'); return; }
+
+  const btn = document.getElementById('btn-gen');
+  btn.disabled = true; btn.innerHTML = '<span>⏳</span> Gerando…';
+
+  const box = document.getElementById('gen-result-box');
+  const res = document.getElementById('gen-result');
+  box.style.display = 'block';
+  res.innerHTML = '<span class="loading">Gerando mensagem padronizada…</span>';
+
+  const dadosPreench = [];
+  if (data)  dadosPreench.push(`Data da solicitação: ${data}`);
+  if (hora)  dadosPreench.push(`Horário: ${hora}`);
+  if (proc)  dadosPreench.push(`Procedimento/exame: ${proc}`);
+
+  const prompt = `Você é um assistente de auditoria médica do PMedGuBH (Posto Médico da Guarnição de Belo Horizonte), Seção de Guias - PMedGuBH.
+
+Crie uma mensagem de WhatsApp profissional, clara e padronizada, informando ao beneficiário que sua solicitação não pôde ser autorizada pelo seguinte motivo:
+
+MOTIVO DA NEGATIVA: ${motivo}
+
+${dadosPreench.length ? 'DADOS DA SOLICITAÇÃO:\n'+dadosPreench.join('\n') : ''}
+
+INSTRUÇÕES OBRIGATÓRIAS:
+- Comece com "Olá, Sr.(a)."
+- Se foram fornecidos data, horário e procedimento, mencione: "Sua solicitação registrada em [DATA], às [HORÁRIO], referente a [PROCEDIMENTO], foi analisada pela auditoria prévia."
+- Use *negrito* (asteriscos) para destacar termos-chave, como no WhatsApp
+- Seja objetivo, respeitoso e profissional
+- Informe o que precisa ser feito para resolver ou o que justifica a negativa
+- Termine informando que após a correção/envio de documentos, a solicitação poderá ser reavaliada (se aplicável)
+- Não use emojis desnecessários
+- Use linguagem formal mas acessível
+
+Retorne APENAS o texto da mensagem, sem explicações ou comentários adicionais.`;
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const json = await resp.json();
+    textoGerado = json.content?.[0]?.text || '';
+    if (!textoGerado) throw new Error('Resposta vazia');
+    res.textContent = textoGerado;
+  } catch(e) {
+    res.innerHTML = `<span class="error">Erro ao gerar: ${e.message}. Tente novamente.</span>`;
+    textoGerado = '';
+  } finally {
+    btn.disabled = false; btn.innerHTML = '<span>✨</span> Gerar mensagem padronizada';
+  }
+}
+
+function copyGerado() {
+  if (!textoGerado) return;
+  copyToClipboard(textoGerado);
+  const btn = document.getElementById('btn-copy-gen');
+  btn.classList.add('copied'); btn.innerHTML='<span>✅</span> Copiado!';
+  setTimeout(()=>{ btn.classList.remove('copied'); btn.innerHTML='<span>📋</span> Copiar mensagem'; },2000);
+  showToast('Mensagem copiada!');
+}
+
+function editarGerado() {
+  if (!textoGerado) return;
+  const ta = document.getElementById('notepad-text');
+  const curr = ta.value.trim();
+  ta.value = curr ? curr+'\n\n'+textoGerado : textoGerado;
+  updateCharCount();
+  switchTab('bloco', document.querySelectorAll('.tab-btn')[1]);
+  showToast('Enviado para o Bloco de Notas!');
+}
+
+/* ═══════════════════════════════════════════
+   TABS
+═══════════════════════════════════════════ */
+function switchTab(id, btn) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+/* ═══════════════════════════════════════════
+   UTILITÁRIOS
+═══════════════════════════════════════════ */
+function copyToClipboard(text) {
+  if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).catch(()=>fallbackCopy(text));
+  else fallbackCopy(text);
+}
+function fallbackCopy(text) {
+  const ta=document.createElement('textarea'); ta.value=text;
+  ta.style.cssText='position:fixed;opacity:0;'; document.body.appendChild(ta);
+  ta.focus(); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+}
+let toastTimer;
+function showToast(msg) {
+  const t=document.getElementById('toast'); t.textContent='✅ '+msg;
+  t.classList.add('show'); clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+/* ═══════════════════════════════════════════
+   MÁSCARAS — data dd/mm/aaaa  e  hora HH:MM
+═══════════════════════════════════════════ */
+function maskInput(el) {
+  const tipo = el.dataset.mask;
+  let v = el.value.replace(/\D/g,'');
+  if (tipo === 'data') {
+    if (v.length > 8) v = v.slice(0,8);
+    if (v.length > 4)      v = v.slice(0,2)+'/'+v.slice(2,4)+'/'+v.slice(4);
+    else if (v.length > 2) v = v.slice(0,2)+'/'+v.slice(2);
+    el.value = v;
+  } else if (tipo === 'hora') {
+    if (v.length > 4) v = v.slice(0,4);
+    if (v.length > 2) v = v.slice(0,2)+':'+v.slice(2);
+    el.value = v;
+  }
+}
+
+/* INIT */
+renderCards(MODELOS);
+populateSelect();
+</script>
+</body>
+</html>
