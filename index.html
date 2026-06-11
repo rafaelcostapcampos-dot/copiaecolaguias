@@ -206,26 +206,6 @@
     .btn-clear:hover { border-color: #e55; color: #c00; }
     .char-count { font-size: 11px; color: var(--muted); padding: 0 13px 9px; }
 
-    /* Gerador IA */
-    .gen-layout { display: flex; flex-direction: column; gap: 12px; }
-    .gen-box { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
-    .gen-head { padding: 10px 13px; background: linear-gradient(135deg, var(--navy-900) 0%, var(--navy-700) 100%); border-bottom: 2px solid var(--gold); color: #fff; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-    .gen-body { padding: 13px; }
-    .gen-body label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; display: block; margin-bottom: 5px; }
-    .gen-body textarea { width: 100%; min-height: 80px; padding: 10px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; line-height: 1.6; font-family: inherit; color: var(--text); background: var(--bg); resize: vertical; outline: none; transition: border-color .15s; }
-    .gen-body textarea:focus { border-color: var(--navy-700); background: #fff; }
-    .gen-row { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 9px; }
-    .gen-field { flex: 1; min-width: 130px; display: flex; flex-direction: column; gap: 3px; }
-    .gen-field label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
-    .gen-field input { padding: 7px 9px; border: 1.5px solid var(--border); border-radius: 7px; font-size: 13px; background: var(--bg); color: var(--text); outline: none; font-family: inherit; transition: border-color .15s; }
-    .gen-field input:focus { border-color: var(--navy-700); background: #fff; }
-    .btn-gen { width: 100%; margin-top: 11px; padding: 11px; background: var(--navy-700); color: #fff; border: none; border-radius: 9px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background .15s; }
-    .btn-gen:hover { background: var(--navy-900); }
-    .btn-gen:disabled { background: #8faacc; cursor: not-allowed; }
-    .gen-result { background: #f6f9f3; border: 1.5px solid var(--border); border-radius: 8px; padding: 12px 13px; font-size: 13px; line-height: 1.65; white-space: pre-wrap; word-break: break-word; color: var(--text); min-height: 60px; }
-    .gen-result .loading { color: var(--muted); font-style: italic; }
-    .gen-result .error { color: #c00; }
-
     /* Toast */
     #toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--navy-900); color: #fff; border: 1px solid var(--gold); padding: 9px 18px; border-radius: 24px; font-size: 13px; font-weight: 600; opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; z-index: 999; }
     #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -254,7 +234,6 @@
 <div class="tabs">
   <button class="tab-btn active" onclick="switchTab('modelos',this)">📋 Modelos</button>
   <button class="tab-btn"        onclick="switchTab('bloco',this)">✏️ Bloco de Notas</button>
-  <button class="tab-btn"        onclick="switchTab('gerador',this)">🤖 Gerador IA</button>
 </div>
 
 <!-- ═══════════════ ABA 1 — MODELOS ═══════════════ -->
@@ -287,39 +266,6 @@
       <div class="char-count" id="char-count">0 caracteres</div>
       <div class="np-actions">
         <button class="btn-wpp" id="btn-wpp-copy" onclick="copyNotepad()"><span>📋</span> Copiar para WPP</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════════ ABA 3 — GERADOR IA ═══════════════ -->
-<div id="tab-gerador" class="panel">
-  <div class="gen-layout">
-    <div class="gen-box">
-      <div class="gen-head">🤖 Gerador de Mensagem — Outros Motivos</div>
-      <div class="gen-body">
-        <label>Descreva o motivo da negativa (em linguagem livre)</label>
-        <textarea id="gen-motivo" placeholder="Ex: Procedimento não coberto pelo FUSEx para beneficiários da reserva, procedimento realizado em local não credenciado, duplicidade de solicitação no mesmo período, fora do prazo de validade do pedido médico..."></textarea>
-        <div class="gen-row">
-          <div class="gen-field"><label>Data da solicitação</label><input type="text" id="gen-data" placeholder="dd/mm/aaaa" data-mask="data" oninput="maskInput(this)" /></div>
-          <div class="gen-field"><label>Horário</label><input type="text" id="gen-hora" placeholder="HH:MM" data-mask="hora" oninput="maskInput(this)" /></div>
-          <div class="gen-field"><label>Exame / Procedimento</label><input type="text" id="gen-proc" placeholder="Ex: Ressonância Magnética de Joelho" /></div>
-        </div>
-        <button class="btn-gen" id="btn-gen" onclick="gerarMensagem()">
-          <span>✨</span> Gerar mensagem padronizada
-        </button>
-      </div>
-    </div>
-    <div class="gen-box" id="gen-result-box" style="display:none;">
-      <div class="ns-head">
-        <span>Mensagem gerada</span>
-        <button class="btn-clear" style="padding:4px 9px;font-size:12px;border-radius:6px;border:1px solid var(--border);background:#fff;color:var(--muted);cursor:pointer;" onclick="editarGerado()">✏️ Editar no Bloco</button>
-      </div>
-      <div style="padding:13px;">
-        <div class="gen-result" id="gen-result"></div>
-        <button class="btn-copy" id="btn-copy-gen" onclick="copyGerado()" style="margin-top:10px;">
-          <span>📋</span> Copiar mensagem
-        </button>
       </div>
     </div>
   </div>
@@ -863,93 +809,6 @@ document.getElementById('notepad-text').addEventListener('input', updateCharCoun
 function updateCharCount() {
   const n = document.getElementById('notepad-text').value.length;
   document.getElementById('char-count').textContent = `${n} caractere${n!==1?'s':''}`;
-}
-
-/* ═══════════════════════════════════════════
-   GERADOR IA
-═══════════════════════════════════════════ */
-let textoGerado = '';
-
-async function gerarMensagem() {
-  const motivo = document.getElementById('gen-motivo').value.trim();
-  const data   = document.getElementById('gen-data').value.trim();
-  const hora   = document.getElementById('gen-hora').value.trim();
-  const proc   = document.getElementById('gen-proc').value.trim();
-
-  if (!motivo) { showToast('Descreva o motivo da negativa.'); return; }
-
-  const btn = document.getElementById('btn-gen');
-  btn.disabled = true; btn.innerHTML = '<span>⏳</span> Gerando…';
-
-  const box = document.getElementById('gen-result-box');
-  const res = document.getElementById('gen-result');
-  box.style.display = 'block';
-  res.innerHTML = '<span class="loading">Gerando mensagem padronizada…</span>';
-
-  const dadosPreench = [];
-  if (data)  dadosPreench.push(`Data da solicitação: ${data}`);
-  if (hora)  dadosPreench.push(`Horário: ${hora}`);
-  if (proc)  dadosPreench.push(`Procedimento/exame: ${proc}`);
-
-  const prompt = `Você é um assistente de auditoria médica do PMedGuBH (Posto Médico da Guarnição de Belo Horizonte), Seção de Guias - PMedGuBH.
-
-Crie uma mensagem de WhatsApp profissional, clara e padronizada, informando ao beneficiário que sua solicitação não pôde ser autorizada pelo seguinte motivo:
-
-MOTIVO DA NEGATIVA: ${motivo}
-
-${dadosPreench.length ? 'DADOS DA SOLICITAÇÃO:\n'+dadosPreench.join('\n') : ''}
-
-INSTRUÇÕES OBRIGATÓRIAS:
-- Comece com "Olá, Sr.(a)."
-- Se foram fornecidos data, horário e procedimento, mencione: "Sua solicitação registrada em [DATA], às [HORÁRIO], referente a [PROCEDIMENTO], foi analisada pela auditoria prévia."
-- Use *negrito* (asteriscos) para destacar termos-chave, como no WhatsApp
-- Seja objetivo, respeitoso e profissional
-- Informe o que precisa ser feito para resolver ou o que justifica a negativa
-- Termine informando que após a correção/envio de documentos, a solicitação poderá ser reavaliada (se aplicável)
-- Não use emojis desnecessários
-- Use linguagem formal mas acessível
-
-Retorne APENAS o texto da mensagem, sem explicações ou comentários adicionais.`;
-
-  try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-    const json = await resp.json();
-    textoGerado = json.content?.[0]?.text || '';
-    if (!textoGerado) throw new Error('Resposta vazia');
-    res.textContent = textoGerado;
-  } catch(e) {
-    res.innerHTML = `<span class="error">Erro ao gerar: ${e.message}. Tente novamente.</span>`;
-    textoGerado = '';
-  } finally {
-    btn.disabled = false; btn.innerHTML = '<span>✨</span> Gerar mensagem padronizada';
-  }
-}
-
-function copyGerado() {
-  if (!textoGerado) return;
-  copyToClipboard(textoGerado);
-  const btn = document.getElementById('btn-copy-gen');
-  btn.classList.add('copied'); btn.innerHTML='<span>✅</span> Copiado!';
-  setTimeout(()=>{ btn.classList.remove('copied'); btn.innerHTML='<span>📋</span> Copiar mensagem'; },2000);
-  showToast('Mensagem copiada!');
-}
-
-function editarGerado() {
-  if (!textoGerado) return;
-  const ta = document.getElementById('notepad-text');
-  const curr = ta.value.trim();
-  ta.value = curr ? curr+'\n\n'+textoGerado : textoGerado;
-  updateCharCount();
-  switchTab('bloco', document.querySelectorAll('.tab-btn')[1]);
-  showToast('Enviado para o Bloco de Notas!');
 }
 
 /* ═══════════════════════════════════════════
