@@ -540,11 +540,12 @@ Após o envio do relatório atualizado, a solicitação poderá ser reavaliada p
   {
     num: 6, titulo: "Documento incorreto",
     campos: ["DATA","HORÁRIO","EXAME/CONSULTA/PROCEDIMENTO"],
+    temDocIncorreto: true,
     template: `Olá, Sr.(a).
 
 Sua solicitação registrada em [DATA], às [HORÁRIO], referente a [EXAME/CONSULTA/PROCEDIMENTO], foi analisada pela auditoria prévia.
 
-No momento, não foi possível prosseguir com a análise, pois o documento enviado está *incorreto*.
+No momento, não foi possível prosseguir com a análise, pois o documento enviado está *incorreto*.[INFO_DOC_INCORRETO]
 
 Solicitamos o reenvio do documento correto, contendo as informações necessárias para análise.
 
@@ -553,11 +554,12 @@ Após o envio correto, a solicitação poderá ser reavaliada.`
   {
     num: 7, titulo: "Seção incorreta",
     campos: ["DATA","HORÁRIO","EXAME/CONSULTA/PROCEDIMENTO"],
+    temSecao: true,
     template: `Olá, Sr.(a).
 
 Sua solicitação registrada em [DATA], às [HORÁRIO], referente a [EXAME/CONSULTA/PROCEDIMENTO], foi analisada pela auditoria prévia.
 
-No momento, não foi possível prosseguir com a autorização, pois a solicitação foi encaminhada para *seção incorreta*.
+No momento, não foi possível prosseguir com a autorização, pois a solicitação foi encaminhada para *seção incorreta*.[INFO_SECAO]
 
 Solicitamos que o pedido seja direcionado à seção responsável pela análise/execução do procedimento solicitado, conforme o fluxo correto de atendimento.
 
@@ -566,11 +568,12 @@ Após o encaminhamento adequado, a solicitação poderá ser analisada pela seç
   {
     num: 8, titulo: "Local do exame/procedimento incorreto",
     campos: ["DATA","HORÁRIO","EXAME/CONSULTA/PROCEDIMENTO"],
+    temLocalIncorreto: true,
     template: `Olá, Sr.(a).
 
 Sua solicitação registrada em [DATA], às [HORÁRIO], referente a [EXAME/CONSULTA/PROCEDIMENTO], foi analisada pela auditoria prévia.
 
-No momento, não foi possível prosseguir com a autorização, pois o *local informado para realização do exame/procedimento/consulta está incorreto ou não corresponde ao local autorizado/credenciado* para essa solicitação.
+No momento, não foi possível prosseguir com a autorização, pois o *local informado para realização do exame/procedimento/consulta está incorreto ou não corresponde ao local autorizado/credenciado* para essa solicitação.[INFO_LOCAL_INCORRETO]
 
 Solicitamos a correção do local de realização ou o envio de nova solicitação com o local adequado, conforme orientação do serviço responsável.
 
@@ -602,10 +605,35 @@ const AGENDA_DIAS = {
   "Sexta-feira":    ["Cirurgia Torácica/Pneumologia","Reumatologia"]
 };
 
+/* Seções disponíveis (modelo 7) */
+const SECOES = [
+  "Seção de Guias — PMedGuBH",
+  "Seção de Odontologia — PMedGuBH",
+  "Seção de Saúde Mental — PMedGuBH",
+  "Seção de Fisioterapia — PMedGuBH",
+  "Seção de Nutrição — PMedGuBH",
+  "FUSEx / 4ª Região Militar",
+  "SAMMED — Sistema de Assistência Médica",
+  "Regulação / Central de Marcação",
+];
+
+/* Tipos de documento incorreto (modelo 6) */
+const TIPOS_DOC = [
+  "Pedido médico",
+  "Relatório médico",
+  "Laudo médico",
+  "Resultado de exame",
+  "Receita médica",
+  "Guia de solicitação",
+  "Documento de identificação",
+  "Comprovante de vínculo FUSEx",
+  "Outro documento",
+];
+
 /* ═══════════════════════════════════════════
    RENDERIZAR CARDS
 ═══════════════════════════════════════════ */
-function buildPreview(template, valores, dutText) {
+function buildPreview(template, valores, dutText, agendaInfo, extraInfo) {
   let html = template;
   for (const [k,v] of Object.entries(valores)) {
     if (v.trim()) {
@@ -613,15 +641,16 @@ function buildPreview(template, valores, dutText) {
       html = html.replace(re, `<strong>${v}</strong>`);
     }
   }
-  if (dutText) {
-    html = html.replace('[CRITÉRIOS_DUT]', dutText ? dutText : '[CRITÉRIOS_DUT]');
-  }
-  html = html.replace('[INFO_ESPECIALIDADE]','');
+  if (dutText) html = html.replace('[CRITÉRIOS_DUT]', dutText);
+  html = html.replace('[INFO_ESPECIALIDADE]', agendaInfo || '');
+  html = html.replace('[INFO_SECAO]',         (extraInfo && extraInfo.secao)        ? ` A solicitação deve ser encaminhada para: *${extraInfo.secao}*.` : '');
+  html = html.replace('[INFO_LOCAL_INCORRETO]',(extraInfo && extraInfo.localIncorreto) ? ` O local informado foi: *${extraInfo.localIncorreto}*.` : '');
+  html = html.replace('[INFO_DOC_INCORRETO]',  (extraInfo && extraInfo.docInfo)      ? ` ${extraInfo.docInfo}` : '');
   html = html.replace(/\[([A-ZÀ-Ú/_]+)\]/g,'<mark>[$1]</mark>');
   return html;
 }
 
-function getPlainText(template, valores, dutText, agendaInfo) {
+function getPlainText(template, valores, dutText, agendaInfo, extraInfo) {
   let txt = template;
   for (const [k,v] of Object.entries(valores)) {
     if (v.trim()) {
@@ -629,9 +658,11 @@ function getPlainText(template, valores, dutText, agendaInfo) {
       txt = txt.replace(re, v);
     }
   }
-  if (dutText) txt = txt.replace('[CRITÉRIOS_DUT]', dutText);
-  if (agendaInfo) txt = txt.replace('[INFO_ESPECIALIDADE]', agendaInfo);
-  else txt = txt.replace('[INFO_ESPECIALIDADE]','').trim();
+  if (dutText)   txt = txt.replace('[CRITÉRIOS_DUT]', dutText);
+  txt = txt.replace('[INFO_ESPECIALIDADE]',  agendaInfo || '');
+  txt = txt.replace('[INFO_SECAO]',          (extraInfo && extraInfo.secao)         ? ` A solicitação deve ser encaminhada para: *${extraInfo.secao}*.` : '');
+  txt = txt.replace('[INFO_LOCAL_INCORRETO]',(extraInfo && extraInfo.localIncorreto) ? ` O local informado foi: *${extraInfo.localIncorreto}*.` : '');
+  txt = txt.replace('[INFO_DOC_INCORRETO]',  (extraInfo && extraInfo.docInfo)       ? ` ${extraInfo.docInfo}` : '');
   return txt;
 }
 
@@ -678,6 +709,42 @@ function renderCards(lista) {
         <div class="dut-preview-box" id="agenda-box-${m.num}"></div>
       </div>` : '';
 
+    /* Bloco extra para modelo 6 (Documento incorreto) */
+    const docIncorretoBlock = m.temDocIncorreto ? `
+      <div class="dut-selector">
+        <label>📄 Tipo de documento enviado incorretamente</label>
+        <select id="doc-tipo-${m.num}" onchange="onDocChange(${m.num})">
+          <option value="">— Selecionar tipo de documento —</option>
+          ${TIPOS_DOC.map(d=>`<option value="${d}">${d}</option>`).join('')}
+        </select>
+        <div style="display:flex;gap:7px;margin-top:8px;flex-wrap:wrap;">
+          <div class="fg" style="min-width:180px;">
+            <label>Identificação do documento (opcional)</label>
+            <input type="text" id="doc-id-${m.num}" placeholder="Ex: nº 12345, RG 123456, etc." oninput="onDocChange(${m.num})" />
+          </div>
+        </div>
+      </div>` : '';
+
+    /* Bloco extra para modelo 7 (Seção incorreta) */
+    const secaoBlock = m.temSecao ? `
+      <div class="dut-selector">
+        <label>🏛️ Seção correta para encaminhamento</label>
+        <select id="secao-sel-${m.num}" onchange="onSecaoChange(${m.num})">
+          <option value="">— Selecionar seção —</option>
+          ${SECOES.map(s=>`<option value="${s}">${s}</option>`).join('')}
+        </select>
+      </div>` : '';
+
+    /* Bloco extra para modelo 8 (Local incorreto) */
+    const localIncorretoBlock = m.temLocalIncorreto ? `
+      <div class="dut-selector">
+        <label>📍 Local informado pelo paciente (opcional)</label>
+        <input type="text" id="local-inc-${m.num}"
+          placeholder="Ex: Clínica XYZ, Hospital ABC..."
+          style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:13px;background:#fff;outline:none;font-family:inherit;"
+          oninput="onLocalIncorretoChange(${m.num})" />
+      </div>` : '';
+
     card.innerHTML = `
       <div class="card-header" onclick="toggleCard(this)">
         <div class="card-num">${m.num}</div>
@@ -686,7 +753,7 @@ function renderCards(lista) {
       </div>
       <div class="card-body">
         <div class="fields">${fieldsHTML}</div>
-        ${dutBlock}${agendaBlock}
+        ${dutBlock}${agendaBlock}${docIncorretoBlock}${secaoBlock}${localIncorretoBlock}
         <div class="preview" id="preview-${m.num}">${buildPreview(m.template,{})}</div>
         <button class="btn-copy" onclick="copyCard(${m.num},this)"><span>📋</span> Copiar mensagem</button>
       </div>`;
@@ -706,9 +773,10 @@ function getCardVals(num) {
 function updatePreview(num) {
   const m = MODELOS.find(x=>x.num===num);
   const {card, vals} = getCardVals(num);
-  const dutText  = getDutText(num, m);
+  const dutText    = getDutText(num, m);
   const agendaInfo = getAgendaInfo(num, m);
-  document.getElementById(`preview-${num}`).innerHTML = buildPreview(m.template, vals, dutText || '', agendaInfo);
+  const extraInfo  = getExtraInfo(num, m);
+  document.getElementById(`preview-${num}`).innerHTML = buildPreview(m.template, vals, dutText || '', agendaInfo, extraInfo);
 }
 
 function getDutText(num, m) {
@@ -722,23 +790,46 @@ function getAgendaInfo(num, m) {
   if (!m.temAgenda) return null;
   const sel = document.getElementById(`agenda-sel-${num}`);
   if (!sel || sel.value === '') return null;
-  if (sel.value === 'presencial') {
-    return `ℹ️ O agendamento presencial permite agendar qualquer especialidade de segunda a sexta.`;
-  }
+  if (sel.value === 'presencial') return `ℹ️ O agendamento presencial permite agendar qualquer especialidade de segunda a sexta.`;
   const [dia, esp] = sel.value.split('|');
   return `ℹ️ ${esp}: agendamento por telefone/WhatsApp disponível às *${dia}s*.`;
+}
+
+function getExtraInfo(num, m) {
+  const info = {};
+
+  if (m.temSecao) {
+    const sel = document.getElementById(`secao-sel-${num}`);
+    if (sel && sel.value) info.secao = sel.value;
+  }
+
+  if (m.temLocalIncorreto) {
+    const inp = document.getElementById(`local-inc-${num}`);
+    if (inp && inp.value.trim()) info.localIncorreto = inp.value.trim();
+  }
+
+  if (m.temDocIncorreto) {
+    const tipo = document.getElementById(`doc-tipo-${num}`);
+    const id   = document.getElementById(`doc-id-${num}`);
+    const tipoVal = tipo && tipo.value ? tipo.value : '';
+    const idVal   = id   && id.value.trim() ? id.value.trim() : '';
+    if (tipoVal || idVal) {
+      let txt = ' O documento enviado';
+      if (tipoVal) txt += ` (${tipoVal}${idVal ? ' — ' + idVal : ''})`;
+      else if (idVal) txt += ` (${idVal})`;
+      txt += ' não é o documento necessário para análise desta solicitação.';
+      info.docInfo = txt;
+    }
+  }
+
+  return Object.keys(info).length ? info : null;
 }
 
 function onDutChange(num) {
   const sel = document.getElementById(`dut-sel-${num}`);
   const box = document.getElementById(`dut-box-${num}`);
-  if (sel.value !== '') {
-    const dut = DUTS[parseInt(sel.value)];
-    box.textContent = dut.texto;
-    box.classList.add('show');
-  } else {
-    box.classList.remove('show');
-  }
+  if (sel.value !== '') { box.textContent = DUTS[parseInt(sel.value)].texto; box.classList.add('show'); }
+  else { box.classList.remove('show'); }
   updatePreview(num);
 }
 
@@ -751,12 +842,17 @@ function onAgendaChange(num) {
   updatePreview(num);
 }
 
+function onSecaoChange(num)         { updatePreview(num); }
+function onLocalIncorretoChange(num){ updatePreview(num); }
+function onDocChange(num)           { updatePreview(num); }
+
 function copyCard(num, btn) {
   const m = MODELOS.find(x=>x.num===num);
   const {vals} = getCardVals(num);
-  const dutText   = getDutText(num, m);
+  const dutText    = getDutText(num, m);
   const agendaInfo = getAgendaInfo(num, m);
-  const txt = getPlainText(m.template, vals, dutText, agendaInfo);
+  const extraInfo  = getExtraInfo(num, m);
+  const txt = getPlainText(m.template, vals, dutText, agendaInfo, extraInfo);
   copyToClipboard(txt);
   btn.classList.add('copied');
   btn.innerHTML = '<span>✅</span> Copiado!';
